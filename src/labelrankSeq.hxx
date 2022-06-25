@@ -18,6 +18,7 @@ using std::pow;
 template <class B>
 auto labelsetBestLabel(const B& x) {
   using K = typename B::key_type;
+  using V = typename B::value_type;
   V max = V(); K maxk = K();
   x.forEach([&](auto k, auto v) {
     if (v<max) return;
@@ -75,6 +76,7 @@ void labelsetFilterAboveU(B& a, V th) {
   a.forEach([&](auto k, auto v) { if (v<th) removes.push_back(k); });
   for (auto k : removes)
     a.remove(k);
+  // TODO: bitset.filter()
 }
 
 
@@ -94,6 +96,7 @@ void labelsetCombineEndU(B& a, V m, V e, V th) {
   });
   for (auto k : removes)
     a.remove(k);
+  // TODO: bitset.filter()
 }
 
 
@@ -115,7 +118,7 @@ bool labelsetIsSubset(const B& x, const B& y) {
 
 /**
  * Initialize labelset for a given vertex.
- * @param as labelsets
+ * @param as target labelsets
  * @param x original graph
  * @param u given vertex
  * @param e exponent value
@@ -134,17 +137,18 @@ void labelrankInitializeVertexW(vector<B>& as, const G& x, K u, V e, V th) {
 
 /**
  * Update labelset for a given vertex.
- * @param as labelsets
+ * @param as target labelsets
+ * @param ls original labelsets
  * @param x original graph
  * @param u given vertex
  * @param e exponent value
  * @param th threshold value
  */
 template <class B, class G, class K, class V>
-void labelrankUpdateVertexU(vector<B>& as, const G& x, K u, V e, V th) {
+void labelrankUpdateVertexW(vector<B>& as, const vector<B>& ls, const G& x, K u, V e, V th) {
   V sumw = V();
   x.forEachEdge(u, [&](auto v, auto w) {
-    labelsetCombineU(as[u], as[v], w);
+    labelsetCombineU(as[u], ls[v], w);
     sumw += w;
   });
   labelsetCombineEndU(as[u], 1/sumw, e, th);
@@ -170,22 +174,37 @@ bool labelrankIsVertexStable(const B& ls, const G& x, K u, V q) {
 }
 
 
+/**
+ * Clear labelsets for all vertices.
+ * @param as target labelsets
+ * @param x original graph
+ */
+template <class B, class G>
+void labelrankClearVertices(B& as, const G& x) {
+  x.forEachVertexKey([&](auto u) { as[u].clear(); });
+}
 
 
-template <class G, class V>
-auto labelrankSeq(const G& x, const LabelrankOptions<V>& o) {
+
+
+template <class G, class V=float>
+auto labelrankSeq(const G& x, const LabelrankOptions<V>& o={}) {
   using K = typename G::key_type;
   vector<OrderedBitset<K, V>> ls(x.span());
+  vector<OrderedBitset<K, V>> ms(x.span());
   x.forEachVertexKey([&](auto u) {
     labelrankInitializeVertexW(ls, x, u, o.inflation, o.cutoff);
   });
   int i = 0;
   while (true) {
     K updated = K();
+    labelrankClearVertices(ms, x);
     x.forEachVertexKey([&](auto u) {
       if (labelrankIsVertexStable(ls, x, u, o.conditionalUpdate)) return;
-      labelrankUpdateVertexU(ls, x, u, o.inflation, o.cutoff); updated++;
+      labelrankUpdateVertexW(ms, ls, x, u, o.inflation, o.cutoff); updated++;
     }); i++;
+    swap(ls, ms);
+    printf("i: %d, updated: %d\n", i, updated);
     if (!updated) break;
   }
   vector<K> a(x.span());

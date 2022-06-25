@@ -26,6 +26,11 @@ struct None {
   // Stream operators.
   friend istream& operator>>(istream& a, None& x) noexcept { return a; }
   friend ostream& operator<<(ostream& a, None x)  noexcept { return a; }
+
+  // Lifetime operators.
+  None() {}
+  template <class T>
+  None(T _) {}
 };
 #define NONE None
 #endif

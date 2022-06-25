@@ -11,21 +11,22 @@ using namespace std;
 
 
 template <class G>
-void runExperiment(const G& x, int batch) {
-  using T = float; vector<T> *init = nullptr;
-  enum NormFunction { L0=0, L1=1, L2=2, Li=3 };
+void runExperiment(const G& x, int repeat) {
+  using K = typename G::key_type;
+  LabelrankResult<K> a = labelrankSeq(x);
+  printf("[%09.3f ms; %03d iters.] labelrankSeq\n", a.time, a.iterations);
 }
 
 
 int main(int argc, char **argv) {
   char *file = argv[1];
-  int batch = argc>2? stoi(argv[2]) : 10;
-  OutDiGraph<int, None, float> x;
+  int repeat = argc>2? stoi(argv[2]) : 5;
+  OutDiGraph<int, None, float> x; float w = 1;
   printf("Loading graph %s ...\n", file);
   readMtxW(x, file); println(x);
   auto fl = [](auto u) { return true; };
-  selfLoopW(x, fl); print(x); printf(" (selfLoopAllVertices)\n");
-  runExperiment(x, batch);
+  selfLoopW(x, w, fl); print(x); printf(" (selfLoopAllVertices)\n");
+  runExperiment(x, repeat);
   printf("\n");
   return 0;
 }

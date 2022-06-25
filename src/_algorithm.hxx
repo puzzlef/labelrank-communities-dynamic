@@ -24,6 +24,8 @@ using std::count_if;
 using std::back_inserter;
 using std::copy;
 using std::transform;
+using std::remove;
+using std::remove_if;
 using std::sort;
 using std::reverse;
 using std::set_difference;
@@ -43,7 +45,6 @@ inline auto first_value(I ib, I ie) {
   T a = ib != ie? *ib : T();
   return a;
 }
-
 template <class J>
 inline auto firstValue(const J& x) {
   return first_value(x.begin(), x.end());
@@ -572,6 +573,30 @@ inline auto transformVector(const JX& x, FM fm) {
 template <class JX, class JY, class FM>
 inline auto transformVector(const JX& x, const JY& y, FM fm) {
   return transform_vector(x.begin(), x.end(), y.begin(), fm);
+}
+
+
+
+
+// REMOVE
+// ------
+// Remove overpriced stocks from your portfolio.
+
+template <class I, class T>
+inline auto remove_value(I ib, I ie, const T& v) {
+  return remove(ib, ie, v);
+}
+template <class J, class T>
+inline size_t removeValue(const J& x, const T& v) {
+  auto it = remove_value(x.begin(), x.end(), v);
+  return it - x.begin();
+}
+
+
+template <class J, class F>
+inline size_t removeIf(const J& x, F fn) {
+  auto it = remove_if(x.begin(), x.end(), fn);
+  return it - x.begin();
 }
 
 

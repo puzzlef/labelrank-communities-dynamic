@@ -170,6 +170,7 @@ using std::inplace_merge;
 #endif
 
 
+#ifndef BITSET_CORRECT_NONE
 #define BITSET_CORRECT_NONE(K, V) \
   inline bool correct(bool unq, vector<pair<K, V>>& buf) { \
     return false; \
@@ -177,6 +178,7 @@ using std::inplace_merge;
   inline bool correct(bool unq=false) { \
     return false; \
   }
+#endif
 
 
 

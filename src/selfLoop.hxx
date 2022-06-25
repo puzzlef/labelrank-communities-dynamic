@@ -41,13 +41,13 @@ inline auto selfLoopCount(const G& x) {
 // SELF-LOOPS
 // ----------
 
-template <class G, class F>
-void selfLoopW(G& a, F fn) {
-  a.forEachVertexKey([&](auto u) { if (fn(u)) a.addEdge(u, u); });
+template <class G, class E, class F>
+void selfLoopW(G& a, const E& w, F fn) {
+  a.forEachVertexKey([&](auto u) { if (fn(u)) a.addEdge(u, u, w); });
   a.correct();
 }
-template <class G, class F>
-auto selfLoop(const G& x, F fn) {
-  auto a = duplicate(x); selfLoopW(a, fn);
+template <class G, class E, class F>
+auto selfLoop(const G& x, const E& w, F fn) {
+  auto a = duplicate(x); selfLoopW(a, w, fn);
   return a;
 }
