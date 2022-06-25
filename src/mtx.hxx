@@ -20,20 +20,8 @@ using std::max;
 // READ-MTX
 // --------
 
-#define READ_MTX_RETURN(R, unq) \
-  inline auto readMtx##R(istream& s) { \
-    R<> a; readMtxW(a, s, unq); \
-    return a; \
-  } \
-  inline auto readMtx##R(const char *pth) { \
-    R<> a; readMtxW(a, pth, unq); \
-    return a; \
-  }
-
-
-template <class G>
-void readMtxW(G& a, istream& s, bool unq=false) {
-  using K = typename G::key_type;
+template <class FV, class FE>
+void readMtxDo(istream& s, FV fv, FE fe) {
   string ln, h0, h1, h2, h3, h4;
 
   // read header
@@ -52,17 +40,29 @@ void readMtxW(G& a, istream& s, bool unq=false) {
   stringstream ls(ln);
   ls >> r >> c >> sz;
   size_t n = max(r, c);
-  for (K u=1; u<=n; u++)
-    a.addVertex(u);
+  for (size_t u=1; u<=n; u++)
+    fv(u);  // a.addVertex(u);
 
   // read edges (from, to)
   while (getline(s, ln)) {
-    K u, v;
+    size_t u, v;
+    double w = 1;
     ls = stringstream(ln);
     if (!(ls >> u >> v)) break;
-    a.addEdge(u, v);
-    if (sym) a.addEdge(v, u);
+    ls >> w;
+    fe(u, v, w);  // a.addEdge(u, v);
+    if (sym) fe(u, v, w);  // a.addEdge(v, u);
   }
+}
+
+
+template <class G>
+void readMtxW(G& a, istream& s, bool unq=false) {
+  using K = typename G::key_type;
+  using E = typename G::edge_value_type;
+  auto fv = [&](auto u) { a.addVertex(K(u)); };
+  auto fe = [&](auto u, auto v, auto w) { a.addEdge(K(u), K(v), E(w)); };
+  readMtxDo(s, fv, fe);
   a.correct(unq);
 }
 template <class G>
@@ -71,6 +71,18 @@ void readMtxW(G& a, const char *pth, bool unq=false) {
   stringstream s(buf);
   return readMtxW(a, s, unq);
 }
+
+
+#define READ_MTX_RETURN(R, unq) \
+  inline auto readMtx##R(istream& s) { \
+    R<> a; readMtxW(a, s, unq); \
+    return a; \
+  } \
+  inline auto readMtx##R(const char *pth) { \
+    R<> a; readMtxW(a, pth, unq); \
+    return a; \
+  }
+
 READ_MTX_RETURN(DiGraph, true)
 READ_MTX_RETURN(OutDiGraph, true)
 READ_MTX_RETURN(Graph, false)
