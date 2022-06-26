@@ -10,5 +10,6 @@
 #include "transpose.hxx"
 #include "selfLoop.hxx"
 #include "deadEnds.hxx"
+#include "modularity.hxx"
 #include "labelrank.hxx"
 #include "labelrankSeq.hxx"

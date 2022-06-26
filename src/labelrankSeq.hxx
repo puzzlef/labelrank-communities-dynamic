@@ -126,7 +126,7 @@ bool labelsetIsSubset(const B& x, const B& y) {
  */
 template <class B, class G, class K, class V>
 void labelrankInitializeVertexW(vector<B>& as, const G& x, K u, V e, V th) {
-  V sumw = V(); as[u].clear();
+  V sumw = V();
   x.forEachEdge(u, [&](auto v, auto w) {
     as[u].add(v, w);
     sumw += w;
@@ -196,20 +196,24 @@ auto labelrankSeq(const G& x, const LabelrankOptions<V>& o={}) {
     labelrankInitializeVertexW(ls, x, u, o.inflation, o.cutoff);
   });
   int i = 0;
+  K oldupdated = K();
   while (true) {
     K updated = K();
     labelrankClearVertices(ms, x);
     x.forEachVertexKey([&](auto u) {
-      if (labelrankIsVertexStable(ls, x, u, o.conditionalUpdate)) return;
-      labelrankUpdateVertexW(ms, ls, x, u, o.inflation, o.cutoff); updated++;
+      if (labelrankIsVertexStable(ls, x, u, o.conditionalUpdate)) ms[u] = ls[u];
+      else { labelrankUpdateVertexW(ms, ls, x, u, o.inflation, o.cutoff); updated++; }
     }); i++;
     swap(ls, ms);
     printf("i: %d, updated: %d\n", i, updated);
-    if (!updated) break;
+    if (!updated || updated==oldupdated) break;
+    oldupdated = updated;
   }
-  vector<K> a(x.span());
+  vector<K> a(x.span()); K zeros = K();
   x.forEachVertexKey([&](auto u) {
     a[u] = labelsetBestLabel(ls[u]);
+    if (a[u]==0) zeros++;
   });
+  printf("zeros: %d\n", zeros);
   return LabelrankResult(a, i, 0);
 }
