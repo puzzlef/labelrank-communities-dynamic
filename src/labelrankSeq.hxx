@@ -72,10 +72,11 @@ void labelsetPowU(B& a, V e) {
  */
 template <class B, class V>
 void labelsetFilterAboveU(B& a, V th) {
-  using K = typename B::key_type; vector<K> removes;
-  a.forEach([&](auto k, auto v) { if (v<th) removes.push_back(k); });
-  for (auto k : removes)
-    a.remove(k);
+  a.removeIfValue([&](auto v) { return v<th; });
+  // using K = typename B::key_type; vector<K> removes;
+  // a.forEach([&](auto k, auto v) { if (v<th) removes.push_back(k); });
+  // for (auto k : removes)
+  //   a.remove(k);
   // TODO: bitset.filter()
 }
 
@@ -89,13 +90,15 @@ void labelsetFilterAboveU(B& a, V th) {
  */
 template <class B, class V>
 void labelsetCombineEndU(B& a, V m, V e, V th) {
-  using K = typename B::key_type; vector<K> removes;
-  a.forEach([&](auto k, auto& v) {
-    v = pow(v*m, e);
-    if (v<th) removes.push_back(k);
-  });
-  for (auto k : removes)
-    a.remove(k);
+  a.forEach([&](auto k, auto& v) { v = pow(v*m, e); });
+  a.removeIfValue([&](auto v) { return v<th; });
+  // using K = typename B::key_type; vector<K> removes;
+  // a.forEach([&](auto k, auto& v) {
+  //   v = pow(v*m, e);
+  //   if (v<th) removes.push_back(k);
+  // });
+  // for (auto k : removes)
+  //   a.remove(k);
   // TODO: bitset.filter()
 }
 
