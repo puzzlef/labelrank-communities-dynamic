@@ -181,6 +181,37 @@ using std::inplace_merge;
 #endif
 
 
+#ifndef BITSET_REMOVE_IF
+#define BITSET_REMOVE_IF_USING(K, V, data, name, fname) \
+  template <class F> \
+  inline void removeIf##name(F fn) { \
+    data.resize(pairsRemoveIf##fname(data, fn)); \
+  }
+
+#define BITSET_REMOVE_IF(K, V, data) \
+  BITSET_REMOVE_IF_USING(K, V, data,,) \
+  BITSET_REMOVE_IF_USING(K, V, data, Key, Key) \
+  BITSET_REMOVE_IF_USING(K, V, data, Value, Value)
+
+#define BITSET_REMOVE_IF_BIPARTITE_USING(K, V, data, part, name, fname) \
+  template <class F> \
+  inline void removeIf##name(F fn) { \
+    auto ib = data.begin(); \
+    auto im = ib + part; \
+    auto ie = data.end(); \
+    auto ic = pairs_remove_if##fname(ib, im, fn); \
+    auto id = pairs_remove_if##fname(im, ie, fn); \
+    data.erase(id, ie); \
+    data.erase(ic, im); \
+  }
+
+#define BITSET_REMOVE_IF_BIPARTITE(K, V, data, part) \
+  BITSET_REMOVE_IF_BIPARTITE_USING(K, V, data, part,,) \
+  BITSET_REMOVE_IF_BIPARTITE_USING(K, V, data, part, Key, _key) \
+  BITSET_REMOVE_IF_BIPARTITE_USING(K, V, data, part, Value, _value)
+#endif
+
+
 
 
 // UNOREDERD-BITSET
@@ -240,6 +271,7 @@ class UnorderedBitset {
   // Update operations.
   public:
   BITSET_CORRECT_NONE(K, V)
+  BITSET_REMOVE_IF(K, V, data)
   inline bool clear() noexcept {
     if (empty()) return false;
     data.clear();
@@ -330,6 +362,7 @@ class OrderedBitset {
   // Update operations.
   public:
   BITSET_CORRECT_NONE(K, V)
+  BITSET_REMOVE_IF(K, V, data)
   inline bool clear() noexcept {
     if (empty()) return false;
     data.clear();
@@ -439,6 +472,7 @@ class POrderedBitset {
 
   // Update operations.
   public:
+  BITSET_REMOVE_IF_BIPARTITE(K, V, data, ordered)
   inline bool correct(bool unq=false) {
     if (unordered() == 0) return false;
     mergePartitions();
@@ -535,6 +569,7 @@ class ROrderedBitset {
 
   // Update operations.
   public:
+  BITSET_REMOVE_IF_BIPARTITE(K, V, data, ordered)
   inline bool correct(bool unq, vector<pair<K, V>>& buf) {
     BITSET_FCOMPARES(K, V)
     size_t e = size();

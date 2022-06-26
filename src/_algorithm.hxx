@@ -600,6 +600,39 @@ inline size_t removeIf(const J& x, F fn) {
 }
 
 
+template <class I, class F>
+inline auto pairs_remove_if(I ib, I ie, F fn) {
+  auto ft = [&](const auto& p) { return fn(p.first, p.second); };
+  return remove_if(ib, ie, ft);
+}
+template <class I, class F>
+inline auto pairs_remove_if_key(I ib, I ie, F fn) {
+  auto ft = [&](const auto& p) { return fn(p.first); };
+  return remove_if(ib, ie, ft);
+}
+template <class I, class F>
+inline auto pairs_remove_if_value(I ib, I ie, F fn) {
+  auto ft = [&](const auto& p) { return fn(p.second); };
+  return remove_if(ib, ie, ft);
+}
+
+template <class J, class F>
+inline size_t pairsRemoveIf(const J& x, F fn) {
+  auto it = pairs_remove_if(x.begin(), x.end(), fn);
+  return it - x.begin();
+}
+template <class J, class F>
+inline size_t pairsRemoveIfKey(const J& x, F fn) {
+  auto it = pairs_remove_if_key(x.begin(), x.end(), fn);
+  return it - x.begin();
+}
+template <class J, class F>
+inline size_t pairsRemoveIfValue(const J& x, F fn) {
+  auto it = pairs_remove_if_value(x.begin(), x.end(), fn);
+  return it - x.begin();
+}
+
+
 
 
 // SORT
