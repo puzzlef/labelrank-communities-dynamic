@@ -1,4 +1,5 @@
 #pragma once
+#include <utility>
 #include <type_traits>
 #include <iterator>
 #include <algorithm>
@@ -12,6 +13,7 @@ using std::iterator_traits;
 using std::vector;
 using std::unordered_map;
 using std::hash;
+using std::move;
 using std::distance;
 using std::for_each;
 using std::any_of;
@@ -600,36 +602,75 @@ inline size_t removeIf(const J& x, F fn) {
 }
 
 
+
+
+// FILTER-IF
+// ---------
+
 template <class I, class F>
-inline auto pairs_remove_if(I ib, I ie, F fn) {
-  auto ft = [&](const auto& p) { return fn(p.first, p.second); };
-  return remove_if(ib, ie, ft);
+auto filter_if(I ib, I ie, I ia, F fn) {
+  for (; ib!=ie; ++ib) {
+    if (!fn(*ib)) continue;
+    if (ia!=ib) *ia = move(*ib);
+    ++ia;
+  }
+  return ia;
 }
 template <class I, class F>
-inline auto pairs_remove_if_key(I ib, I ie, F fn) {
-  auto ft = [&](const auto& p) { return fn(p.first); };
-  return remove_if(ib, ie, ft);
-}
-template <class I, class F>
-inline auto pairs_remove_if_value(I ib, I ie, F fn) {
-  auto ft = [&](const auto& p) { return fn(p.second); };
-  return remove_if(ib, ie, ft);
+inline auto filter_if(I ib, I ie, F fn) {
+  return filter_if(ib, ie, ib, fn);
 }
 
 template <class J, class F>
-inline size_t pairsRemoveIf(const J& x, F fn) {
-  auto it = pairs_remove_if(x.begin(), x.end(), fn);
-  return it - x.begin();
+inline size_t filterIf(J& a, F fn) {
+  auto it = filter_if(a.begin(), a.end(), fn);
+  return it - a.begin();
+}
+
+
+template <class I, class F>
+inline auto pairs_filter_if(I ib, I ie, I ia, F fn) {
+  auto ft = [&](const auto& p) { return fn(p.first, p.second); };
+  return filter_if(ib, ie, ia, ft);
+}
+template <class I, class F>
+inline auto pairs_filter_if_key(I ib, I ie, I ia, F fn) {
+  auto ft = [&](const auto& p) { return fn(p.first); };
+  return filter_if(ib, ie, ia, ft);
+}
+template <class I, class F>
+inline auto pairs_filter_if_value(I ib, I ie, I ia, F fn) {
+  auto ft = [&](const auto& p) { return fn(p.second); };
+  return filter_if(ib, ie, ia, ft);
+}
+
+template <class I, class F>
+inline auto pairs_filter_if(I ib, I ie, F fn) {
+  return pairs_filter_if(ib, ie, ib, fn);
+}
+template <class I, class F>
+inline auto pairs_filter_if_key(I ib, I ie, F fn) {
+  return pairs_filter_if_key(ib, ie, ib, fn);
+}
+template <class I, class F>
+inline auto pairs_filter_if_value(I ib, I ie, F fn) {
+  return pairs_filter_if_value(ib, ie, ib, fn);
+}
+
+template <class J, class F>
+inline auto pairsFilterIf(J& a, F fn) {
+  auto it = pairs_filter_if(a.begin(), a.end(), fn);
+  return it - a.begin();
 }
 template <class J, class F>
-inline size_t pairsRemoveIfKey(const J& x, F fn) {
-  auto it = pairs_remove_if_key(x.begin(), x.end(), fn);
-  return it - x.begin();
+inline auto pairsFilterIfKey(J& a, F fn) {
+  auto it = pairs_filter_if_key(a.begin(), a.end(), fn);
+  return it - a.begin();
 }
 template <class J, class F>
-inline size_t pairsRemoveIfValue(const J& x, F fn) {
-  auto it = pairs_remove_if_value(x.begin(), x.end(), fn);
-  return it - x.begin();
+inline auto pairsFilterIfValue(J& a, F fn) {
+  auto it = pairs_filter_if_value(a.begin(), a.end(), fn);
+  return it - a.begin();
 }
 
 
