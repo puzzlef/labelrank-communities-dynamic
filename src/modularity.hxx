@@ -8,21 +8,6 @@ using std::vector;
 
 
 
-// WEIGHT
-// ------
-
-template <class G>
-auto totalEdgeWeight(const G& x) {
-  using E = typename G::edge_value_type; E a = E();
-  x.forEachVertexKey([&](auto u) {
-    x.forEachEdge(u, [&](auto v, auto w) { a += w; });
-  });
-  return a;
-}
-
-
-
-
 // MODULARITY
 // ----------
 
@@ -36,7 +21,7 @@ auto totalEdgeWeight(const G& x) {
  * @see https://www.youtube.com/watch?v=0zuiLBOIcsw
  */
 template <class T>
-inline T modularity(T cin, T ctot, T M, T R) {
+inline T modularityCommunity(T cin, T ctot, T M, T R=T(1)) {
   return cin/(2*M) - R*pow(ctot/(2*M), 2);
 }
 
@@ -50,10 +35,10 @@ inline T modularity(T cin, T ctot, T M, T R) {
  * @returns modularity [-0.5, 1]
  */
 template <class T>
-T modularity(const vector<T>& cin, const vector<T>& ctot, T M, T R) {
+T modularityCommunities(const vector<T>& cin, const vector<T>& ctot, T M, T R=T(1)) {
   T a = T();
-  for (int i=0, I=cin.size(); i<I; i++)
-    a += modularity(cin[i], ctot[i], M, R);
+  for (size_t i=0, I=cin.size(); i<I; i++)
+    a += modularityCommunity(cin[i], ctot[i], M, R);
   return a;
 }
 
@@ -67,18 +52,18 @@ T modularity(const vector<T>& cin, const vector<T>& ctot, T M, T R) {
  * @returns modularity [-0.5, 1]
  */
 template <class G, class FC, class T>
-auto modularity(const G& x, FC fc, T M, T R) {
-  int S = x.span();
+auto modularity(const G& x, FC fc, T M, T R=T(1)) {
+  size_t S = x.span();
   vector<T> cin(S), ctot(S);
   x.forEachVertexKey([&](auto u) {
-    int c = fc(u);
+    size_t c = fc(u);
     x.forEachEdge(u, [&](auto v, auto w) {
-      int d = fc(v);
+      size_t d = fc(v);
       if (c==d) cin[c] += w;
       ctot[c] += w;
     });
   });
-  return modularity(cin, ctot, M, R);
+  return modularityCommunities(cin, ctot, M, R);
 }
 
 /**
@@ -89,7 +74,7 @@ auto modularity(const G& x, FC fc, T M, T R) {
  * @returns modularity [-0.5, 1]
  */
 template <class G, class T>
-inline auto modularity(const G& x, T M, T R) {
+inline auto modularity(const G& x, T M, T R=T(1)) {
   auto fc = [](auto u) { return u; };
   return modularity(x, fc, M, R);
 }
@@ -113,6 +98,6 @@ inline auto modularity(const G& x, T M, T R) {
  * @see https://gist.github.com/wolfram77/a3c95cd94a38a100f9b075594a823928
  */
 template <class T>
-inline T deltaModularity(T vcout, T vdout, T vtot, T ctot, T dtot, T M, T R) {
+inline T deltaModularity(T vcout, T vdout, T vtot, T ctot, T dtot, T M, T R=T(1)) {
   return (vcout-vdout)/M - R*vtot*(vtot+ctot-dtot)/(2*M*M);
 }
