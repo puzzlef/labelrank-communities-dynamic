@@ -14,7 +14,7 @@ struct LabelrankOptions {
   V   cutoff;
   V   conditionalUpdate;
 
-  LabelrankOptions(int repeat=1, int maxIterations=500, V inflation=1.2, V cutoff=0.01, V conditionalUpdate=0.5) :
+  LabelrankOptions(int repeat=1, int maxIterations=500, V inflation=1.2, V cutoff=0.3, V conditionalUpdate=0.3) :
   repeat(repeat), maxIterations(maxIterations), inflation(inflation), cutoff(cutoff), conditionalUpdate(conditionalUpdate) {}
 };
 

@@ -1,4 +1,5 @@
 #pragma once
+#include <utility>
 #include <cmath>
 #include <vector>
 #include "_main.hxx"
@@ -24,7 +25,7 @@ auto labelsetBestLabel(const B& x) {
     if (v<max) return;
     max = v; maxk = k;
   });
-  return maxk;
+  return make_pair(maxk, max);
 }
 
 
@@ -72,7 +73,8 @@ void labelsetPowU(B& a, V e) {
  */
 template <class B, class V>
 void labelsetFilterAboveU(B& a, V th) {
-  a.filterIfValue([&](auto v) { return v>=th; });
+  auto max = labelsetBestLabel(a).second, thmax = th*max;
+  a.filterIfValue([&](auto v) { return v>=thmax; });
 }
 
 
@@ -86,7 +88,8 @@ void labelsetFilterAboveU(B& a, V th) {
 template <class B, class V>
 void labelsetCombineEndU(B& a, V m, V e, V th) {
   a.forEach([&](auto k, auto& v) { v = pow(v*m, e); });
-  a.filterIfValue([&](auto v) { return v>=th; });
+  auto max = labelsetBestLabel(a).second, thmax = th*max;
+  a.filterIfValue([&](auto v) { return v>=thmax; });
 }
 
 
@@ -186,7 +189,7 @@ auto labelrankSeq(const G& x, const LabelrankOptions<V>& o={}) {
     labelrankInitializeVertexW(ls, x, u, o.inflation, o.cutoff);
   });
   int i = 0;
-  K oldupdated = K();
+  K updatedPrev = K();
   while (true) {
     K updated = K();
     labelrankClearVertices(ms, x);
@@ -196,12 +199,12 @@ auto labelrankSeq(const G& x, const LabelrankOptions<V>& o={}) {
     }); i++;
     swap(ls, ms);
     printf("i: %d, updated: %d\n", i, updated);
-    if (!updated || updated==oldupdated) break;
-    oldupdated = updated;
+    if (!updated || updated==updatedPrev) break;
+    updatedPrev = updated;
   }
   vector<K> a(x.span()); K zeros = K();
   x.forEachVertexKey([&](auto u) {
-    a[u] = labelsetBestLabel(ls[u]);
+    a[u] = labelsetBestLabel(ls[u]).first;
     if (a[u]==0) zeros++;
   });
   printf("zeros: %d\n", zeros);
