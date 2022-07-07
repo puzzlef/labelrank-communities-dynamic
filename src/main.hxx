@@ -8,6 +8,7 @@
 #include "csr.hxx"
 #include "duplicate.hxx"
 #include "transpose.hxx"
+#include "symmetricize.hxx"
 #include "selfLoop.hxx"
 #include "deadEnds.hxx"
 #include "properties.hxx"
