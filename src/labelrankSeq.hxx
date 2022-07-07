@@ -192,10 +192,14 @@ auto labelrankSeq(const G& x, const LabelrankOptions<V>& o={}) {
   K updatedPrev = K();
   while (true) {
     K updated = K();
+    size_t labels = 0;
     labelrankClearVertices(ms, x);
     x.forEachVertexKey([&](auto u) {
-      if (labelrankIsVertexStable(ls, x, u, o.conditionalUpdate)) ms[u] = ls[u];
-      else { labelrankUpdateVertexW(ms, ls, x, u, o.inflation, o.cutoff); updated++; }
+      labels += ls[u].size();
+      // if (labelrankIsVertexStable(ls, x, u, o.conditionalUpdate)) ms[u] = ls[u];
+      // else { labelrankUpdateVertexW(ms, ls, x, u, o.inflation, o.cutoff); updated++; }
+      labelrankUpdateVertexW(ms, ls, x, u, o.inflation, o.cutoff); updated++;
+      if (u%1000==0) printf("update vertex: %zu, labels: %zu\n", u, labels);
     }); i++;
     swap(ls, ms);
     printf("i: %d, updated: %d\n", i, updated);
