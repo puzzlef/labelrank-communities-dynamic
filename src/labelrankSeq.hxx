@@ -111,26 +111,26 @@ bool labelsetIsSubset(const B& x, const B& y) {
 
 /**
  * Initialize labelset for a given vertex.
- * @param as target labelsets
+ * @param a target labelset
  * @param x original graph
  * @param u given vertex
  * @param e exponent value
  * @param th threshold value
  */
 template <class B, class G, class K, class V>
-void labelrankInitializeVertexW(vector<B>& as, const G& x, K u, V e, V th) {
+void labelrankInitializeVertexW(B& a, const G& x, K u, V e, V th) {
   V sumw = V();
   x.forEachEdge(u, [&](auto v, auto w) {
-    as[u].add(v, w);
+    a.add(v, w);
     sumw += w;
   });
-  labelsetCombineEndU(as[u], 1/sumw, e, th);
+  labelsetCombineEndU(a, 1/sumw, e, th);
 }
 
 
 /**
  * Update labelset for a given vertex.
- * @param as target labelsets
+ * @param a target labelset
  * @param ls original labelsets
  * @param x original graph
  * @param u given vertex
@@ -138,13 +138,13 @@ void labelrankInitializeVertexW(vector<B>& as, const G& x, K u, V e, V th) {
  * @param th threshold value
  */
 template <class B, class G, class K, class V>
-void labelrankUpdateVertexW(vector<B>& as, const vector<B>& ls, const G& x, K u, V e, V th) {
+void labelrankUpdateVertexW(B& a, const vector<B>& ls, const G& x, K u, V e, V th) {
   V sumw = V();
   x.forEachEdge(u, [&](auto v, auto w) {
-    labelsetCombineU(as[u], ls[v], w);
+    labelsetCombineU(a, ls[v], w);
     sumw += w;
   });
-  labelsetCombineEndU(as[u], 1/sumw, e, th);
+  labelsetCombineEndU(a, 1/sumw, e, th);
 }
 
 
@@ -164,17 +164,6 @@ bool labelrankIsVertexStable(const B& ls, const G& x, K u, V q) {
     if (labelsetIsSubset(ls[u], ls[v])) count++;
   });
   return count > q * x.degree(u);
-}
-
-
-/**
- * Clear labelsets for all vertices.
- * @param as target labelsets
- * @param x original graph
- */
-template <class B, class G>
-void labelrankClearVertices(B& as, const G& x) {
-  x.forEachVertexKey([&](auto u) { as[u].clear(); });
 }
 
 
