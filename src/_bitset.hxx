@@ -1,12 +1,14 @@
 #pragma once
 #include <utility>
-#include <vector>
 #include <stdexcept>
 #include <algorithm>
+#include <vector>
+#include <unordered_map>
 #include "_main.hxx"
 
 using std::pair;
 using std::vector;
+using std::unordered_map;
 using std::out_of_range;
 using std::make_pair;
 using std::iter_swap;
@@ -440,6 +442,168 @@ class DenseBitset {
 template <class K=int, class V=NONE>
 inline auto denseBitset(K _k=K(), V _v=V(), size_t capacity=0) {
   return DenseBitset<K, V>(capacity);
+}
+
+
+
+
+// SPARSE-BITSET
+// -------------
+// An integer set that is based on unordered_map.
+// It does not maintain integers in insertion order.
+
+#ifndef SPARSE_BITSET_FIND
+#define SPARSE_BITSET_FIND(K, V, data) \
+  inline auto find(const K& k)        noexcept { return data.find(k); } \
+  inline auto cfind(const K& k) const noexcept { return data.find(k); } \
+  inline auto find(const K& k)  const noexcept { return cfind(k); }
+#endif
+
+
+#ifndef SPARSE_BITSET_FOREACH
+#define SPARSE_BITSET_FOREACH_USING(f0, f1, K, V, data, name0, name1, fn, it, call) \
+  template <class F> \
+  f0 void name0##forEach##name1(F fn) f1 { \
+    auto ib = data.begin(); \
+    auto ie = data.end(); \
+    for (auto it=ib; it!=ie; ++it) call; \
+  }
+
+#define SPARSE_BITSET_FOREACH(K, V, data) \
+  /* dont change the keys! */ \
+  SPARSE_BITSET_FOREACH_USING(inline,, K, V, data,, Value, fn, it, fn(it->second)) \
+  SPARSE_BITSET_FOREACH_USING(inline,, K, V, data,, Pair,  fn, it, fn(make_pair(it->first, it->second))) \
+  SPARSE_BITSET_FOREACH_USING(inline,, K, V, data,,,       fn, it, fn(it->first, it->second)) \
+  SPARSE_BITSET_FOREACH_USING(inline, const, K, V, data, c, Key,   fn, it, fn(it->first)) \
+  SPARSE_BITSET_FOREACH_USING(inline, const, K, V, data, c, Value, fn, it, fn(it->second)) \
+  SPARSE_BITSET_FOREACH_USING(inline, const, K, V, data, c, Pair,  fn, it, fn(make_pair(it->first, it->second))) \
+  SPARSE_BITSET_FOREACH_USING(inline, const, K, V, data, c,,       fn, it, fn(it->first, it->second)) \
+  template <class F> \
+  inline void forEachKey(F fn)   const { cforEachKey(fn); } \
+  template <class F> \
+  inline void forEachValue(F fn) const { cforEachValue(fn); } \
+  template <class F> \
+  inline void forEachPair(F fn)  const { cforEachPair(fn); } \
+  template <class F> \
+  inline void forEach(F fn)      const { cforEach(fn); }
+#endif
+
+
+#ifndef SPARSE_BITSET_HAS
+#define SPARSE_BITSET_HAS(K, V, data) \
+  inline bool has(const K& k) const noexcept { \
+    return data.count(k)==0; \
+  }
+
+#define SPARSE_BITSET_GET(K, V, data) \
+  inline V get(const K& k) const noexcept { \
+    auto it = data.find(k); \
+    return it==data.end()? V() : it->second; \
+  }
+
+#define SPARSE_BITSET_SET(K, V, data) \
+  inline bool set(const K& k, const V& v) noexcept { \
+    data[k] = v; \
+    return true; \
+  }
+
+#define SPARSE_BITSET_SUBSCRIPT(K, V, data) \
+  inline V& operator[](const K& k) noexcept { \
+    return data[k]; \
+  } \
+  inline const V& operator[](const K& k) const noexcept { \
+    return data[k]; \
+  }
+
+#define SPARSE_BITSET_AT(K, V, data) \
+  inline V& at(const K& k) { \
+    return data[k]; \
+  } \
+  inline const V& at(const K& k) const { \
+    return data[k]; \
+  }
+#endif
+
+
+#ifndef SPARSE_BITSET_FILTER_IF
+#define SPARSE_BITSET_FILTER_IF_USING(K, V, data, name, fn, test) \
+  template <class F> \
+  void filterIf##name(F fn) { \
+    for (auto it=data.begin(); it!=data.end();) { \
+      if(!test) it = data.erase(it); \
+      else ++it; \
+    } \
+  }
+
+#define SPARSE_BITSET_FILTER_IF(K, V, data) \
+  SPARSE_BITSET_FILTER_IF_USING(K, V, data,, fn, fn(it->first, it->second)) \
+  SPARSE_BITSET_FILTER_IF_USING(K, V, data, Key, fn, fn(it->first)) \
+  SPARSE_BITSET_FILTER_IF_USING(K, V, data, Value, fn, fn(it->second))
+#endif
+
+
+template <class K=int, class V=NONE>
+class SparseBitset {
+  // Data.
+  protected:
+  unordered_map<K, V> data;
+
+  // Types.
+  public:
+  BITSET_TYPES(K, V, data)
+
+
+  // Iterator operations.
+  public:
+  BITSET_ITERATOR(K, V, data)
+  BITSET_CITERATOR(K, V, data)
+
+
+  // Size operations.
+  public:
+  BITSET_SIZE(K, V, data)
+  BITSET_EMPTY(K, V)
+
+
+  // Search operations.
+  public:
+  SPARSE_BITSET_FIND(K, V, data)
+
+
+  // Access operations.
+  public:
+  BITSET_ENTRIES(K, V, data)
+  SPARSE_BITSET_FOREACH(K, V, data)
+  SPARSE_BITSET_HAS(K, V, data)
+  SPARSE_BITSET_GET(K, V, data)
+  SPARSE_BITSET_SET(K, V, data)
+  SPARSE_BITSET_SUBSCRIPT(K, V, data)
+  SPARSE_BITSET_AT(K, V, data)
+
+  // Update operations.
+  public:
+  BITSET_CORRECT_NONE(K, V)
+  SPARSE_BITSET_FILTER_IF(K, V, data)
+  inline bool clear() noexcept {
+    if (empty()) return false;
+    data.clear();
+    return true;
+  }
+
+  inline bool add(const K& k, const V& v=V()) {
+    data[k] = v;
+    return true;
+  }
+  BITSET_ADD_UNCHECKED_DEFAULT(K, V)
+
+  inline bool remove(const K& k) {
+    return data.erase(k);
+  }
+};
+
+template <class K=int, class V=NONE>
+inline auto sparseBitset(K _k=K(), V _v=V()) {
+  return SparseBitset<K, V>();
 }
 
 
@@ -906,6 +1070,8 @@ void writeBitset(ostream& a, const B& x) {
 template <class K, class V>
 inline void write(ostream& a, const DenseBitset<K, V>& x)       { writeBitset(a, x); }
 template <class K, class V>
+inline void write(ostream& a, const SparseBitset<K, V>& x)      { writeBitset(a, x); }
+template <class K, class V>
 inline void write(ostream& a, const UnorderedBitset<K, V>& x)   { writeBitset(a, x); }
 template <class K, class V>
 inline void write(ostream& a, const OrderedBitset<K, V>& x)     { writeBitset(a, x); }
@@ -916,6 +1082,8 @@ inline void write(ostream& a, const ROrderedBitset<K, V>& x)    { writeBitset(a,
 
 template <class K, class V>
 inline ostream& operator<<(ostream& a, const DenseBitset<K, V>& x)       { write(a, x); return a; }
+template <class K, class V>
+inline ostream& operator<<(ostream& a, const SparseBitset<K, V>& x)      { write(a, x); return a; }
 template <class K, class V>
 inline ostream& operator<<(ostream& a, const UnorderedBitset<K, V>& x)   { write(a, x); return a; }
 template <class K, class V>
@@ -939,6 +1107,8 @@ inline void copyBitsetW(B& a, const C& x) {
 
 template <class B, class K, class V>
 inline void copyW(B& a, const DenseBitset<K, V>& x)       { copyBitsetW(a, x); }
+template <class B, class K, class V>
+inline void copyW(B& a, const SparseBitset<K, V>& x)      { copyBitsetW(a, x); }
 template <class B, class K, class V>
 inline void copyW(B& a, const UnorderedBitset<K, V>& x)   { copyBitsetW(a, x); }
 template <class B, class K, class V>

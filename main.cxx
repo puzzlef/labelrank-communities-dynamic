@@ -28,7 +28,7 @@ int main(int argc, char **argv) {
   OutDiGraph<int, None, float> x; float w = 1;
   printf("Loading graph %s ...\n", file);
   readMtxW(x, file); println(x);
-  auto y  = symmetricize(x); print(y); printf(" (symmetricize)\n");
+  auto y  = duplicate(x); // print(y); printf(" (symmetricize)\n");
   auto fl = [](auto u) { return true; };
   selfLoopU(y, w, fl); print(y); printf(" (selfLoopAllVertices)\n");
   runExperiment(y, repeat);

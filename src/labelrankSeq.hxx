@@ -164,22 +164,26 @@ void labelrankInitializeVertexW(BT& a, vector<B>& as, const G& x, K u, V e, V th
  * @param th threshold value
  */
 template <class BT, class B, class G, class K, class V>
-void labelrankUpdateVertexW(BT& a, vector<B>& as, const vector<B>& ls, const G& x, K u, V e, V th) {
-  auto t0 = timeNow();
-  V sumw = V(); a.clear();
+size_t labelrankUpdateVertexW(BT& a, vector<B>& as, const vector<B>& ls, const G& x, K u, V e, V th) {
+  // auto t0 = timeNow();
+  V sumw = V(); a.clear(); size_t ops = 0;
   x.forEachEdge(u, [&](auto v, auto w) {
     labelsetCombineU(a, ls[v], w);
     sumw += w;
+    ops += ls[v].size();
   });
-  auto t1 = timeNow();
+  // auto t1 = timeNow();
   labelsetCombineEndU2(a, 1/sumw, e, th);
-  auto t2 = timeNow();
+  ops += a.size();
+  // auto t2 = timeNow();
   copyW(as[u], a);
-  auto t3 = timeNow();
-  auto d0 = durationMilliseconds(t0, t1);
-  auto d1 = durationMilliseconds(t1, t2);
-  auto d2 = durationMilliseconds(t2, t3);
-  printf("d0: %fms, d1: %fms, d2: %fms\n", d0, d1, d2);
+  ops += a.size();
+  return ops;
+  // auto t3 = timeNow();
+  // auto d0 = durationMilliseconds(t0, t1);
+  // auto d1 = durationMilliseconds(t1, t2);
+  // auto d2 = durationMilliseconds(t2, t3);
+  // printf("d0: %fms, d1: %fms, d2: %fms\n", d0, d1, d2);
 }
 
 
@@ -219,15 +223,16 @@ auto labelrankSeq(const G& x, const LabelrankOptions<V>& o={}) {
   int i = 0;
   K updatedPrev = K();
   while (true) {
+    size_t ops = 0;
     K updated = K();
     auto start = timeNow();
     x.forEachVertexKey([&](auto u) {
       if (labelrankIsVertexStable(ls, x, u, o.conditionalUpdate)) ms[u] = ls[u];
-      else { labelrankUpdateVertexW(la, ms, ls, x, u, o.inflation, o.cutoff); updated++; }
+      else { ops += labelrankUpdateVertexW(la, ms, ls, x, u, o.inflation, o.cutoff); updated++; }
     }); i++;
     auto stop = timeNow();
     swap(ls, ms);
-    printf("i: %d, updated: %d, time: %fms\n", i, updated, durationMilliseconds(start, stop));
+    printf("i: %d, updated: %d, time: %fms, ops: %zu\n", i, updated, durationMilliseconds(start, stop), ops);
     if (!updated || updated==updatedPrev) break;
     updatedPrev = updated;
   }
