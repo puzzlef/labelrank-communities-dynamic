@@ -182,6 +182,14 @@ using std::inplace_merge;
 #endif
 
 
+#ifndef BITSET_ADD_UNCHECKED
+#define BITSET_ADD_UNCHECKED_DEFAULT(K, V) \
+  inline bool addUnchecked(const K& k, const V& v=V()) { \
+    return add(k, v); \
+  }
+#endif
+
+
 #ifndef BITSET_FILTER_IF
 #define BITSET_FILTER_IF_USING(K, V, data, name, fname) \
   template <class F> \
@@ -414,6 +422,7 @@ class DenseBitset {
     data[k] = v;
     return true;
   }
+  BITSET_ADD_UNCHECKED_DEFAULT(K, V)
 
   inline bool remove(const K& k) {
     if (k>=data.size() || !data[k]) return false;
@@ -502,6 +511,10 @@ class UnorderedBitset {
 
   inline bool add(const K& k, const V& v=V()) {
     if (has(k)) return false;
+    data.push_back({k, v});
+    return true;
+  }
+  inline bool addUnchecked(const K& k, const V& v=V()) {
     data.push_back({k, v});
     return true;
   }
@@ -597,6 +610,7 @@ class OrderedBitset {
     data.insert(it, {k, v});
     return true;
   }
+  BITSET_ADD_UNCHECKED_DEFAULT(K, V)
 
   inline bool remove(const K& k) {
     auto it = locate_match(k);
@@ -716,6 +730,11 @@ class POrderedBitset {
     if (unordered() <= LIMIT) mergePartitions();
     return true;
   }
+  inline bool addUnchecked(const K& k, const V& v=V()) {
+    data.push_back({k, v});
+    if (unordered() <= LIMIT) mergePartitions();
+    return true;
+  }
 
   inline bool remove(const K& k) {
     auto it = locate_match(k);
@@ -826,6 +845,7 @@ class ROrderedBitset {
     data.push_back({k, v});
     return true;
   }
+  BITSET_ADD_UNCHECKED_DEFAULT(K, V)
 
   inline bool remove(const K& k) {
     auto it = locate_match(k);
@@ -847,6 +867,10 @@ inline auto rorderedBitset(K _k=K(), V _v=V()) {
 // RETYPE
 // ------
 
+template <class K, class V, class KA=K, class VA=V>
+constexpr auto retype(const DenseBitset<K, V>& x, KA _k=KA(), VA _v=VA()) {
+  return DenseBitset<KA, VA>();
+}
 template <class K, class V, class KA=K, class VA=V>
 constexpr auto retype(const UnorderedBitset<K, V>& x, KA _k=KA(), VA _v=VA()) {
   return UnorderedBitset<KA, VA>();
@@ -870,15 +894,28 @@ constexpr auto retype(const ROrderedBitset<K, V>& x, KA _k=KA(), VA _v=VA()) {
 // WRITE
 // -----
 
-template <class K, class V>
-inline void write(ostream& a, const UnorderedBitset<K, V>& x)   { writeValues(a, x); }
-template <class K, class V>
-inline void write(ostream& a, const OrderedBitset<K, V>& x)     { writeValues(a, x); }
-template <class K, class V, size_t N>
-inline void write(ostream& a, const POrderedBitset<K, V, N>& x) { writeValues(a, x); }
-template <class K, class V>
-inline void write(ostream& a, const ROrderedBitset<K, V>& x)    { writeValues(a, x); }
+template <class B>
+void writeBitset(ostream& a, const B& x) {
+  a << "{\n";
+  x.forEach([&](const auto& k, const auto& v) {
+    a << "  " << k << ": " << v << "\n";
+  });
+  a << "}";
+}
 
+template <class K, class V>
+inline void write(ostream& a, const DenseBitset<K, V>& x)       { writeBitset(a, x); }
+template <class K, class V>
+inline void write(ostream& a, const UnorderedBitset<K, V>& x)   { writeBitset(a, x); }
+template <class K, class V>
+inline void write(ostream& a, const OrderedBitset<K, V>& x)     { writeBitset(a, x); }
+template <class K, class V, size_t N>
+inline void write(ostream& a, const POrderedBitset<K, V, N>& x) { writeBitset(a, x); }
+template <class K, class V>
+inline void write(ostream& a, const ROrderedBitset<K, V>& x)    { writeBitset(a, x); }
+
+template <class K, class V>
+inline ostream& operator<<(ostream& a, const DenseBitset<K, V>& x)       { write(a, x); return a; }
 template <class K, class V>
 inline ostream& operator<<(ostream& a, const UnorderedBitset<K, V>& x)   { write(a, x); return a; }
 template <class K, class V>
@@ -887,3 +924,26 @@ template <class K, class V, size_t N>
 inline ostream& operator<<(ostream& a, const POrderedBitset<K, V, N>& x) { write(a, x); return a; }
 template <class K, class V>
 inline ostream& operator<<(ostream& a, const ROrderedBitset<K, V>& x)    { write(a, x); return a; }
+
+
+
+
+// COPY
+// ----
+
+template <class B, class C>
+inline void copyBitsetW(B& a, const C& x) {
+  a.clear();
+  x.forEach([&](const auto& k, const auto& v) { a.addUnchecked(k, v); });
+}
+
+template <class B, class K, class V>
+inline void copyW(B& a, const DenseBitset<K, V>& x)       { copyBitsetW(a, x); }
+template <class B, class K, class V>
+inline void copyW(B& a, const UnorderedBitset<K, V>& x)   { copyBitsetW(a, x); }
+template <class B, class K, class V>
+inline void copyW(B& a, const OrderedBitset<K, V>& x)     { copyBitsetW(a, x); }
+template <class B, class K, class V, size_t N>
+inline void copyW(B& a, const POrderedBitset<K, V, N>& x) { copyBitsetW(a, x); }
+template <class B, class K, class V>
+inline void copyW(B& a, const ROrderedBitset<K, V>& x)    { copyBitsetW(a, x); }
