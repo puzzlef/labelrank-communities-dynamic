@@ -8,6 +8,7 @@
 using std::pair;
 using std::vector;
 using std::out_of_range;
+using std::make_pair;
 using std::iter_swap;
 using std::find_if;
 using std::lower_bound;
@@ -209,6 +210,228 @@ using std::inplace_merge;
   BITSET_FILTER_IF_BIPARTITE_USING(K, V, data, part, Key, _key) \
   BITSET_FILTER_IF_BIPARTITE_USING(K, V, data, part, Value, _value)
 #endif
+
+
+
+
+// DENSE-BITSET
+// ------------
+// An integer set that stores values in a full-size vector.
+// It maintains integers in insertion order.
+
+#ifndef DENSE_BITSET_FIND
+#define DENSE_BITSET_FIND(K, V, ids) \
+  inline auto find(const K& k) noexcept { return ids.find(k); } \
+  inline auto cfind(const K& k) const noexcept { return ids.cfind(k); } \
+  inline auto find(const K& k)  const noexcept { return cfind(k); }
+#endif
+
+
+#ifndef DENSE_BITSET_ENTRIES
+#define DENSE_BITSET_ENTRIES(K, V, data, ids) \
+  /* dont change the keys! */ \
+  inline auto values() noexcept { \
+    auto fn = [&](K k) { return data[k]; }; \
+    return transformIterable(ids, fn); \
+  } \
+  inline auto pairs() noexcept { \
+    auto fn = [&](K k) { return make_pair(k, data[k]); }; \
+    return transformIterable(ids, fn); \
+  } \
+  inline auto ckeys() const noexcept { \
+    return iterable(ids); \
+  } \
+  inline auto cvalues() const noexcept { \
+    auto fn = [&](K k) { return data[k]; }; \
+    return transformIterable(ids, fn); \
+  } \
+  inline auto cpairs() const noexcept { \
+    auto fn = [&](K k) { return make_pair(k, data[k]); }; \
+    return transformIterable(ids, fn); \
+  } \
+  inline auto keys()   const noexcept { return ckeys(); } \
+  inline auto values() const noexcept { return cvalues(); } \
+  inline auto pairs()  const noexcept { return cpairs(); }
+#endif
+
+
+#ifndef DENSE_BITSET_FOREACH
+#define DENSE_BITSET_FOREACH(K, V, data, ids) \
+  /* dont change the keys! */ \
+  template <class F> \
+  inline void forEachValue(F fn) { \
+    for (K k : ids) fn(data[k]); \
+  } \
+  template <class F> \
+  inline void forEachPair(F fn) { \
+    for (K k : ids) fn(make_pair(k, data[k])); \
+  } \
+  template <class F> \
+  inline void forEach(F fn) { \
+    for (K k : ids) fn(k, data[k]); \
+  } \
+  template <class F> \
+  inline void cforEachKey(F fn) const { \
+    for (K k : ids) fn(k); \
+  } \
+  template <class F> \
+  inline void cforEachValue(F fn) const { \
+    for (K k : ids) fn(data[k]); \
+  } \
+  template <class F> \
+  inline void cforEachPair(F fn) const { \
+    for (K k : ids) fn(make_pair(k, data[k])); \
+  } \
+  template <class F> \
+  inline void cforEach(F fn) const { \
+    for (K k : ids) fn(k, data[k]); \
+  } \
+  template <class F> \
+  inline void forEachKey(F fn)   const { cforEachKey(fn); } \
+  template <class F> \
+  inline void forEachValue(F fn) const { cforEachValue(fn); } \
+  template <class F> \
+  inline void forEachPair(F fn)  const { cforEachPair(fn); } \
+  template <class F> \
+  inline void forEach(F fn)      const { cforEach(fn); }
+#endif
+
+
+#ifndef DENSE_BITSET_HAS
+#define DENSE_BITSET_HAS(K, V, data) \
+  inline bool has(const K& k) const noexcept { \
+    return k<data.size() && !!data[k]; \
+  }
+
+#define DENSE_BITSET_GET(K, V, data) \
+  inline V get(const K& k) const noexcept { \
+    return k<data.size()? data[k] : V(); \
+  }
+
+#define DENSE_BITSET_SET(K, V, data) \
+  inline bool set(const K& k, const V& v) noexcept { \
+    if (k>=data.size() || !data[k]) return false; \
+    data[k] = v; \
+    return true; \
+  }
+
+#define DENSE_BITSET_SUBSCRIPT(K, V, data) \
+  inline V& operator[](const K& k) noexcept { \
+    return data[k]; \
+  } \
+  inline const V& operator[](const K& k) const noexcept { \
+    return data[k]; \
+  }
+
+#define DENSE_BITSET_AT(K, V, data) \
+  inline V& at(const K& k) { \
+    if (k>=data.size() || !data[k]) throw out_of_range("bitset key not present"); \
+    return data[k]; \
+  } \
+  inline const V& at(const K& k) const { \
+    if (k>=data.size() || !data[k]) throw out_of_range("bitset key not present"); \
+    return data[k]; \
+  }
+#endif
+
+
+#ifndef DENSE_BITSET_FILTER_IF
+#define DENSE_BITSET_FILTER_IF_USING(K, V, data, ids, name, fn, test) \
+  template <class F> \
+  void filterIf##name(F fn) { \
+    auto ib = ids.begin(); \
+    auto ie = ids.end(); \
+    auto i = ib, j = ib; \
+    for (; i<ie; ++i) { \
+      if (!test) data[*i] = V(); \
+      else { *j = *i; ++j; } \
+    } \
+    ids.erase(j, ie); \
+  }
+
+#define DENSE_BITSET_FILTER_IF(K, V, data, ids) \
+  DENSE_BITSET_FILTER_IF_USING(K, V, data, ids,, fn, fn(*i, data[*i])) \
+  DENSE_BITSET_FILTER_IF_USING(K, V, data, ids, Key, fn, fn(*i)) \
+  DENSE_BITSET_FILTER_IF_USING(K, V, data, ids, Value, fn, fn(data[*i]))
+#endif
+
+
+template <class K=int, class V=NONE>
+class DenseBitset {
+  // Data.
+  protected:
+  vector<V> data;
+  vector<K> ids;
+
+  // Types.
+  public:
+  BITSET_TYPES(K, V, ids)
+
+
+  // Iterator operations.
+  public:
+  BITSET_ITERATOR(K, V, ids)
+  BITSET_CITERATOR(K, V, ids)
+
+
+  // Size operations.
+  public:
+  BITSET_SIZE(K, V, ids)
+  BITSET_EMPTY(K, V)
+
+
+  // Search operations.
+  DENSE_BITSET_FIND(K, V, ids)
+
+
+  // Access operations.
+  public:
+  DENSE_BITSET_ENTRIES(K, V, data, ids)
+  DENSE_BITSET_FOREACH(K, V, data, ids)
+  DENSE_BITSET_HAS(K, V, data)
+  DENSE_BITSET_GET(K, V, data)
+  DENSE_BITSET_SET(K, V, data)
+  DENSE_BITSET_SUBSCRIPT(K, V, data)
+  DENSE_BITSET_AT(K, V, data)
+
+
+  // Update operations.
+  public:
+  BITSET_CORRECT_NONE(K, V)
+  DENSE_BITSET_FILTER_IF(K, V, data, ids)
+  inline bool clear() noexcept {
+    if (ids.empty()) return false;
+    for (K k : ids)
+      data[k] = V();
+    ids.clear();
+    return true;
+  }
+
+  inline bool add(const K& k, const V& v=V()) {
+    if (k<data.size() && data[k]) return false;
+    if (k>=data.size()) data.resize(k+1);
+    ids.push_back(k);
+    data[k] = v;
+    return true;
+  }
+
+  inline bool remove(const K& k) {
+    if (k>=data.size() || !data[k]) return false;
+    ids.erase(remove_value(ids.begin(), ids.end(), k), ids.end());
+    data[k] = V();
+    return true;
+  }
+
+
+  // Lifetime operations.
+  public:
+  DenseBitset(size_t capacity=0): data(capacity), ids() {}
+};
+
+template <class K=int, class V=NONE>
+inline auto denseBitset(K _k=K(), V _v=V(), size_t capacity=0) {
+  return DenseBitset<K, V>(capacity);
+}
 
 
 
