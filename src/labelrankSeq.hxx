@@ -35,8 +35,8 @@ auto labelsetBestLabel(const B& x) {
  * @param x labelset to combine
  * @param w combining weight
  */
-template <class B, class V>
-void labelsetCombineU(B& a, const B& x, V w) {
+template <class BA, class BX, class V>
+void labelsetCombineU(BA& a, const BX& x, V w) {
   x.forEach([&](auto k, auto v) {
     if (a.has(k)) a.set(k, a.get(k) + w*v);
     else a.add(k, w*v);
@@ -94,6 +94,29 @@ void labelsetCombineEndU(B& a, V m, V e, V th) {
 
 
 /**
+ * Finish combining of labelsets to target labelset (probability scaling + inflation operator + cutoff operator).
+ * @param a target labelset
+ * @param m value to multiply
+ * @param e exponent value
+ * @param th threshold value
+ */
+template <class B, class V>
+void labelsetCombineEndU2(B& a, V m, V e, V th) {
+  // auto t0 = timeNow();
+  a.forEach([&](auto k, auto& v) { v = v*m; });  // v = pow(v*m, e);
+  // auto t1 = timeNow();
+  auto max = labelsetBestLabel(a).second, thmax = th*max;
+  // auto t2 = timeNow();
+  a.filterIfValue([&](auto v) { return v>=thmax; });
+  // auto t3 = timeNow();
+  // auto d0 = durationMilliseconds(t0, t1);
+  // auto d1 = durationMilliseconds(t1, t2);
+  // auto d2 = durationMilliseconds(t2, t3);
+  // printf("-> d0: %fms, d1: %fms, d2: %fms\n", d0, d1, d2);
+}
+
+
+/**
  * Tells whether first labelset is subset of second.
  * @param x first labelset
  * @param y second labelset
@@ -111,40 +134,52 @@ bool labelsetIsSubset(const B& x, const B& y) {
 
 /**
  * Initialize labelset for a given vertex.
- * @param a target labelset
+ * @param a temporary labelset
+ * @param as target labelsets
  * @param x original graph
  * @param u given vertex
  * @param e exponent value
  * @param th threshold value
  */
-template <class B, class G, class K, class V>
-void labelrankInitializeVertexW(B& a, const G& x, K u, V e, V th) {
-  V sumw = V();
+template <class BT, class B, class G, class K, class V>
+void labelrankInitializeVertexW(BT& a, vector<B>& as, const G& x, K u, V e, V th) {
+  V sumw = V(); a.clear();
   x.forEachEdge(u, [&](auto v, auto w) {
     a.add(v, w);
     sumw += w;
   });
   labelsetCombineEndU(a, 1/sumw, e, th);
+  copyW(as[u], a);
 }
 
 
 /**
  * Update labelset for a given vertex.
- * @param a target labelset
+ * @param a temporary labelset
+ * @param as target labelsets
  * @param ls original labelsets
  * @param x original graph
  * @param u given vertex
  * @param e exponent value
  * @param th threshold value
  */
-template <class B, class G, class K, class V>
-void labelrankUpdateVertexW(B& a, const vector<B>& ls, const G& x, K u, V e, V th) {
-  V sumw = V();
+template <class BT, class B, class G, class K, class V>
+void labelrankUpdateVertexW(BT& a, vector<B>& as, const vector<B>& ls, const G& x, K u, V e, V th) {
+  auto t0 = timeNow();
+  V sumw = V(); a.clear();
   x.forEachEdge(u, [&](auto v, auto w) {
     labelsetCombineU(a, ls[v], w);
     sumw += w;
   });
-  labelsetCombineEndU(a, 1/sumw, e, th);
+  auto t1 = timeNow();
+  labelsetCombineEndU2(a, 1/sumw, e, th);
+  auto t2 = timeNow();
+  copyW(as[u], a);
+  auto t3 = timeNow();
+  auto d0 = durationMilliseconds(t0, t1);
+  auto d1 = durationMilliseconds(t1, t2);
+  auto d2 = durationMilliseconds(t2, t3);
+  printf("d0: %fms, d1: %fms, d2: %fms\n", d0, d1, d2);
 }
 
 
@@ -172,26 +207,27 @@ bool labelrankIsVertexStable(const B& ls, const G& x, K u, V q) {
 template <class G, class V=float>
 auto labelrankSeq(const G& x, const LabelrankOptions<V>& o={}) {
   using K = typename G::key_type;
-  vector<OrderedBitset<K, V>> ls(x.span());
-  vector<OrderedBitset<K, V>> ms(x.span());
+  DenseBitset<K, V> la(x.span());
+  vector<UnorderedBitset<K, V>> ls(x.span());
+  vector<UnorderedBitset<K, V>> ms(x.span());
+  auto start = timeNow();
   x.forEachVertexKey([&](auto u) {
-    labelrankInitializeVertexW(ls, x, u, o.inflation, o.cutoff);
+    labelrankInitializeVertexW(la, ls, x, u, o.inflation, o.cutoff);
   });
+  auto stop = timeNow();
+  printf("init_time: %fms\n", durationMilliseconds(start, stop));
   int i = 0;
   K updatedPrev = K();
   while (true) {
     K updated = K();
-    size_t labels = 0;
-    labelrankClearVertices(ms, x);
+    auto start = timeNow();
     x.forEachVertexKey([&](auto u) {
-      labels += ls[u].size();
-      // if (labelrankIsVertexStable(ls, x, u, o.conditionalUpdate)) ms[u] = ls[u];
-      // else { labelrankUpdateVertexW(ms, ls, x, u, o.inflation, o.cutoff); updated++; }
-      labelrankUpdateVertexW(ms, ls, x, u, o.inflation, o.cutoff); updated++;
-      if (u%1000==0) printf("update vertex: %zu, labels: %zu\n", u, labels);
+      if (labelrankIsVertexStable(ls, x, u, o.conditionalUpdate)) ms[u] = ls[u];
+      else { labelrankUpdateVertexW(la, ms, ls, x, u, o.inflation, o.cutoff); updated++; }
     }); i++;
+    auto stop = timeNow();
     swap(ls, ms);
-    printf("i: %d, updated: %d\n", i, updated);
+    printf("i: %d, updated: %d, time: %fms\n", i, updated, durationMilliseconds(start, stop));
     if (!updated || updated==updatedPrev) break;
     updatedPrev = updated;
   }

@@ -32,6 +32,9 @@ struct PairSecondValue { inline V operator()(const pair<K, V>& x) noexcept { ret
 // MEASURE-DURATION
 // ----------------
 
+inline auto timeNow() {
+  return high_resolution_clock::now();
+}
 template <class T>
 float durationMilliseconds(const T& start, const T& stop) {
   auto a = duration_cast<microseconds>(stop - start);
