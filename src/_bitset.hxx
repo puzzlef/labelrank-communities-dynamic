@@ -418,9 +418,8 @@ class DenseBitset {
   }
 
   inline bool add(const K& k, const V& v=V()) {
-    if (k<data.size() && data[k]) return false;
     if (k>=data.size()) data.resize(k+1);
-    ids.push_back(k);
+    if (!data[k]) ids.push_back(k);
     data[k] = v;
     return true;
   }
@@ -674,8 +673,9 @@ class UnorderedBitset {
   }
 
   inline bool add(const K& k, const V& v=V()) {
-    if (has(k)) return false;
-    data.push_back({k, v});
+    auto it = locate_match(k);
+    if  (it == end()) data.push_back({k, v});
+    else it.second = v;
     return true;
   }
   inline bool addUnchecked(const K& k, const V& v=V()) {
@@ -770,8 +770,8 @@ class OrderedBitset {
 
   inline bool add(const K& k, const V& v=V()) {
     auto it = locate_spot(k);
-    if (it != end() && (*it).first == k) return false;
-    data.insert(it, {k, v});
+    if (it != end() && (*it).first == k) it.second = v;
+    else data.insert(it, {k, v});
     return true;
   }
   BITSET_ADD_UNCHECKED_DEFAULT(K, V)
@@ -889,9 +889,11 @@ class POrderedBitset {
 
   inline bool add(const K& k, const V& v=V()) {
     auto it = locate_match(k);
-    if (it != end()) return false;
-    data.push_back({k, v});
-    if (unordered() <= LIMIT) mergePartitions();
+    if (it != end()) it.second = v;
+    else {
+      data.push_back({k, v});
+      if (unordered() <= LIMIT) mergePartitions();
+    }
     return true;
   }
   inline bool addUnchecked(const K& k, const V& v=V()) {

@@ -6,16 +6,14 @@
 // LABELRANK-OPTIONS
 // -----------------
 
-template <class V>
 struct LabelrankOptions {
-  int repeat;
-  int maxIterations;
-  V   inflation;
-  V   cutoff;
-  V   conditionalUpdate;
+  int   repeat;
+  int   maxIterations;
+  float inflation;
+  float conditionalUpdate;
 
-  LabelrankOptions(int repeat=1, int maxIterations=500, V inflation=1.2, V cutoff=0.3, V conditionalUpdate=0.3) :
-  repeat(repeat), maxIterations(maxIterations), inflation(inflation), cutoff(cutoff), conditionalUpdate(conditionalUpdate) {}
+  LabelrankOptions(int repeat=1, int maxIterations=500, float inflation=1.2f, float conditionalUpdate=0.3f) :
+  repeat(repeat), maxIterations(maxIterations), inflation(inflation), conditionalUpdate(conditionalUpdate) {}
 };
 
 
